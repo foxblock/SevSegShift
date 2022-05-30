@@ -39,6 +39,7 @@ public:
     const byte numberOfShiftRegisters = 2, // currently const value (not changeable) - maybe in future
     bool isDigitsOnController=false // only Segments are on ShiftRegister - DigitPins are connected to controller
   );
+  virtual ~SevSegShift();
 
   /*
     prepare the SevenSeg-Shift-Register lib

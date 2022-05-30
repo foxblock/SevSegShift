@@ -23,7 +23,6 @@
  */
 #include <SevSegShift.h>
 
-
 // constructor implementation
 SevSegShift::SevSegShift(
   byte pinDS, 
@@ -46,6 +45,16 @@ SevSegShift::SevSegShift(
   _shiftRegisterMap = new byte[8*numberOfShiftRegisters];
   _numberOfShiftRegisters = numberOfShiftRegisters;
   _isDigitsOnController = isDigitsOnController;
+
+  _shiftRegisterMapDigits = nullptr;
+  _shiftRegisterMapSegments = nullptr;
+}
+
+SevSegShift::~SevSegShift()
+{
+  delete _shiftRegisterMap;
+  delete _shiftRegisterMapDigits;
+  delete _shiftRegisterMapSegments;
 }
 
 void SevSegShift::begin(
@@ -58,12 +67,33 @@ void SevSegShift::begin(
   bool leadingZerosIn,
   bool disableDecPoint
 ) {
+  // NOTE: Code duplication to SevSeg::begin
+  // We need to calculate numDigits and numSegments here for allocating the maps
+  // We cannot move the SevSeg::begin call up, since it calls segmentOff, which in
+  // turn relies on everything being setup (incl. _shiftRegisterMapSegments)
+  numDigits = numDigitsIn;
+  numSegments = disableDecPoint ? 7 : 8; // Ternary 'if' statement
+  //Limit the max number of digits to prevent overflowing
+  if (numDigits > MAXNUMDIGITS) numDigits = MAXNUMDIGITS;
+
+  // Remove old data if begin is called multiple times on same object
+  delete _shiftRegisterMapDigits;
+  delete _shiftRegisterMapSegments;
+
   // here the digit"pins" of the Shift register is stored
   // pins are here the OUTPUT PINs of the Shift Register
-  _shiftRegisterMapDigits = shiftRegisterMapDigits;
+  _shiftRegisterMapDigits = new byte[numDigitsIn];
+  for (int i = 0; i < numDigitsIn; ++i)
+  {
+    _shiftRegisterMapDigits[i] = shiftRegisterMapDigits[i];
+  }
   // here the segment"pins" of the Shift register is stored
   // pins are here the OUTPUT PINs of the Shift Register
-  _shiftRegisterMapSegments = shiftRegisterMapSegments;
+  _shiftRegisterMapSegments = new byte[numSegments];
+  for (int i = 0; i < numSegments; ++i)
+  {
+    _shiftRegisterMapSegments[i] = shiftRegisterMapSegments[i];
+  }
 
   // dummy port for initialization (pin of DS is used - and will be set for OUTPUT multiple times ;) )
   byte dummyDigitPINs[8] = {_pinDS,_pinDS,_pinDS,_pinDS,_pinDS,_pinDS,_pinDS,_pinDS};
@@ -85,7 +115,6 @@ void SevSegShift::begin(
     updateWithDelaysIn,
     leadingZerosIn,
     disableDecPoint);
-
 }
 
 // segmentOn
